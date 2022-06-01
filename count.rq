@@ -1,0 +1,9 @@
+#+ summary: Number of triples per graph
+#+ tags: 
+#+   - metadata 
+
+SELECT ?graph (COUNT(*) AS ?triples) WHERE { 
+	GRAPH ?graph {
+		?s ?p ?o.
+	}
+}
