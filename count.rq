@@ -3,6 +3,7 @@
 #+   - Patient Count
 #+ defaults:
 #+   - type: http://www.orpha.net/ORDO/Orphanet_98896
+#+ endpoint_in_url: False
 
 PREFIX sio: <http://semanticscience.org/resource/>
 select (COUNT(?p) as ?count) where { 
