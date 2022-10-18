@@ -5,6 +5,7 @@
 #+ 
 #+ endpoint_in_url: False
 
+PREFIX sio: <http://semanticscience.org/resource/>
 select ?type (count(?type) as ?frequency) where {
 select distinct ?id ?type where {
 ?id a sio:SIO_000115 .
