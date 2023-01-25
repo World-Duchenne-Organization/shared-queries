@@ -1,3 +1,11 @@
+#+ summary: Returns the Key Performance Indicator of the delay between symptom onset and diagnosis.  This data is aggregated by disease, and by year of diagnosis, and is measured in days.
+#+ tags:
+#+ - KPI diagnosis-delay
+#+ defaults:
+#+ 
+#+ endpoint_in_url: False
+
+
 PREFIX sio: <http://semanticscience.org/resource/> 
 PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
 PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
