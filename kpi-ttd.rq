@@ -5,6 +5,9 @@
 #+ 
 #+ endpoint_in_url: False
 
+################################################################
+# list diagnosis and time from onset to diagnosis
+################################################################
 
 PREFIX sio: <http://semanticscience.org/resource/> 
 PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
@@ -12,71 +15,36 @@ PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
 PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
 PREFIX ofn: <http://www.ontotext.com/sparql/functions/>
 
-################################################################
-# list diagnosis and time from onset to diagnosis
-################################################################
-
-SELECT DISTINCT
-    ?ORDO
-    ?yearOfDiagnosis
-    (xsd:integer(ROUND(AVG(?timeOnsetToDiagnosis))) as ?avgoffset)
+SELECT DISTINCT ?ORDO ?yearOfDiagnosis (xsd:integer(ROUND(AVG(?timeOnsetToDiagnosis))) as ?avgoffset)
 WHERE {
-    BIND(xsd:integer(ofn:asDays(?dateOfDiagnosis - ?dateOfOnset)) AS ?timeOnsetToDiagnosis)
-    BIND(SUBSTR(str(?dateOfDiagnosis), 1,4) AS ?yearOfDiagnosis)
+    BIND(xsd:integer(ofn:asDays(?onsetdate - ?diagnosisdate)) AS ?timeOnsetToDiagnosis)
+#    BIND(xsd:integer(ofn:asDays(?diagnosisdate - ?onsetdate)) AS ?timeOnsetToDiagnosis)
+    BIND(SUBSTR(str(?diagnosisdate), 1,4) AS ?yearOfDiagnosis)
     {
-    SELECT DISTINCT
-        ?idValue
-        ?dateOfDiagnosis
-    WHERE { 
-        ?id sio:SIO_000020 ?role; #denotes
-        sio:SIO_000300 ?idValue. #has-value
-        ?role sio:SIO_000356 ?process. #is-realized-in
-        # diagnosis
-        ?process rdfs:label ?processLabel;
-                 sio:SIO_000229 ?processOutput. #has-output
-        ?processOutput rdfs:label ?processOutputLabel;
-                       rdf:type ?processOutputType.
-        ?processOutput sio:SIO_000300 ?dateOfDiagnosis. #has-value
-        BIND(BOUND(?processLabel) && strlen(?processLabel)>0 as ?checkDiagnosis).
-
-        FILTER (?processLabel = 'Process: Diagnosis date recording process' || !BOUND(?processLabel)).
-        FILTER (?processOutputType != <http://semanticscience.org/resource/SIO_000015>).	
-    }}
+        SELECT  ?ORDO ?diagnosisdate WHERE {
+            GRAPH ?g {
+                ?person sio:SIO_000228 ?role1 .  # person has role role
+                ?role1 sio:SIO_000356 ?process1 . # is realized in process
+                ?process1 a <http://purl.obolibrary.org/obo/NCIT_C18020> .  # diagnostic process
+                ?process1 sio:SIO_000229 ?output1 . #has output output 
+                ?output1 a <http://purl.obolibrary.org/obo/NCIT_C154625> .  # diagnosis code
+                ?output1 sio:SIO_000628 ?diagnosis1 . # output refers to attribute
+                ?diagnosis1 a ?ORDO .
+                FILTER(!(?ORDO = sio:SIO_000614)) .  # not an "attribute" diagnosis
+	    	}
+    		?g sio:SIO_000680 ?startdate .
+    		?startdate sio:SIO_000300 ?diagnosisdate .
+        }
+    }
     {
-    SELECT
-        ?idValue
-        ?dateOfOnset
-    WHERE { 
-        ?id sio:SIO_000020 ?role; #denotes
-        sio:SIO_000300 ?idValue. #has-value
-        ?role sio:SIO_000356 ?process. #is-realized-in
-        ?process rdfs:label ?processLabel;
-                 sio:SIO_000229 ?processOutput. #has-output
-        ?processOutput rdfs:label ?processOutputLabel;
-                       rdf:type ?processOutputType.
-        ?processOutput sio:SIO_000300 ?dateOfOnset. #has-value
-        BIND(BOUND(?processLabel) && strlen(?processLabel)>0 as ?checkOnset).
-
-        FILTER (?processLabel = 'Process: Symptom onset date recording process' || !BOUND(?processLabel)).
-        FILTER (?processOutputType != <http://semanticscience.org/resource/SIO_000015>).
-    }}
-    {
-    SELECT
-        ?idValue
-        ?ORDO
-    WHERE {
-        ?id sio:SIO_000020 ?role; #denotes
-        sio:SIO_000300 ?idValue. #has-value
-
-        ?entity sio:SIO_000228 ?role; #has-role
-                sio:SIO_000008 ?attribute. #has-attribute
-
-        ?output sio:SIO_000628 ?attribute. #refers-to
-        ?attribute rdf:type ?ORDO.
-        ?role rdfs:label ?roleLabel.
-        FILTER (contains(xsd:string(?ORDO), 'ORDO')).
-	}}
+        SELECT  ?onsetdate WHERE {
+            ?person sio:SIO_000228 ?role2 .  # person has role role
+            ?role2 sio:SIO_000356 ?process2 . # is realized in process
+            ?process2 sio:SIO_000229 ?output2 . #has output output
+            ?output2 sio:SIO_000300 ?onsetdate .
+            ?output2 sio:SIO_000628 ?attribute2 . # output refers to attribute
+            ?attribute2 a <http://purl.obolibrary.org/obo/NCIT_C124353> .   
+        }
+    }
 } group by ?ORDO ?yearOfDiagnosis order by ?yearOfDiagnosis ?ORDO
-
-
 
