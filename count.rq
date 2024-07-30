@@ -11,5 +11,5 @@ select (count(?p) as ?count) where {
     ?role sio:SIO_000356 ?process . # is realized in process
     ?process sio:SIO_000229 ?output . #has output output
     ?output sio:SIO_000628 ?attribute . # output refers to attribute
-	?attribute a <http://www.orpha.net/ORDO/Orphanet_98896> .  # attribute is a orphacode
+	?attribute a ?_type_iri .  # attribute is a orphacode
 }
