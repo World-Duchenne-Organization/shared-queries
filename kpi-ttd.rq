@@ -9,42 +9,60 @@
 # list diagnosis and time from onset to diagnosis
 ################################################################
 
-PREFIX sio: <http://semanticscience.org/resource/> 
-PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
-PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
+PREFIX obo: <http://purl.obolibrary.org/obo/>
+PREFIX sio: <http://semanticscience.org/resource/>
 PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
+PREFIX ordo: <http://www.orpha.net/ORDO/>
+PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
 PREFIX ofn: <http://www.ontotext.com/sparql/functions/>
 
+# date of symptom onset is the value (output) of its own model, date of diagnosis is in the context of the diagnosis model
+#SELECT DISTINCT ?pid ?onsetvalue ?diagnosisdate ?ORDO ?yearOfDiagnosis (xsd:integer(ROUND(AVG(?timeOnsetToDiagnosis))) as ?avgoffset)
 SELECT DISTINCT ?ORDO ?yearOfDiagnosis (xsd:integer(ROUND(AVG(?timeOnsetToDiagnosis))) as ?avgoffset)
 WHERE {
-    BIND(xsd:integer(ofn:asDays(?onsetdate - ?diagnosisdate)) AS ?timeOnsetToDiagnosis)
-#    BIND(xsd:integer(ofn:asDays(?diagnosisdate - ?onsetdate)) AS ?timeOnsetToDiagnosis)
+    BIND(xsd:integer(ofn:asDays(?diagnosisdate - ?onsetvalue )) AS ?timeOnsetToDiagnosis)
     BIND(SUBSTR(str(?diagnosisdate), 1,4) AS ?yearOfDiagnosis)
-    {
-        SELECT  ?ORDO ?diagnosisdate WHERE {
-            GRAPH ?g {
-                ?person sio:SIO_000228 ?role1 .  # person has role role
-                ?role1 sio:SIO_000356 ?process1 . # is realized in process
-                ?process1 a <http://purl.obolibrary.org/obo/NCIT_C18020> .  # diagnostic process
-                ?process1 sio:SIO_000229 ?output1 . #has output output 
-                ?output1 a <http://purl.obolibrary.org/obo/NCIT_C154625> .  # diagnosis code
-                ?output1 sio:SIO_000628 ?diagnosis1 . # output refers to attribute
-                ?diagnosis1 a ?ORDO .
-                FILTER(!(?ORDO = sio:SIO_000614)) .  # not an "attribute" diagnosis
-	    	}
-    		?g sio:SIO_000680 ?startdate .
-    		?startdate sio:SIO_000300 ?diagnosisdate .
+    
+		GRAPH ?diseasegraph {
+                ?disperson sio:SIO_000228 ?disrole .  # person has role role
+                ?disrole sio:SIO_000356 ?disprocess ;  # is realized in process
+                            a sio:SIO_000016 .
+                ?disprocess a  <http://purl.obolibrary.org/obo/NCIT_C18020> ; # diagnostic process
+                            sio:SIO_000229 ?disoutput .
+                ?disoutput a <http://purl.obolibrary.org/obo/NCIT_C154625>; # diagnosis code
+                            sio:SIO_000628 ?disattribute.
+                ?disattribute a ?ORDO.
+        FILTER(!(?ORDO = sio:SIO_000614))
         }
-    }
-    {
-        SELECT  ?onsetdate WHERE {
-            ?person sio:SIO_000228 ?role2 .  # person has role role
-            ?role2 sio:SIO_000356 ?process2 . # is realized in process
-            ?process2 sio:SIO_000229 ?output2 . #has output output
-            ?output2 sio:SIO_000300 ?onsetdate .
-            ?output2 sio:SIO_000628 ?attribute2 . # output refers to attribute
-            ?attribute2 a <http://purl.obolibrary.org/obo/NCIT_C124353> .   
-        }
-    }
-} group by ?ORDO ?yearOfDiagnosis order by ?yearOfDiagnosis ?ORDO
+        ?diseasegraph a obo:NCIT_C62143 ; # encounter
+    			sio:SIO_000068 ?diseasetimeline, ?diseaseevent ; # is part of
+    			sio:SIO_000680 ?diseasestartdate . # start date
+    	?diseasestartdate sio:SIO_000300 ?diagnosisdate .  # need the has value property
 
+    ?diseasetimeline a obo:NCIT_C54576, sio:SIO_000417; 
+                	sio:SIO_000332 ?diseaseindividual .
+    ?diseaseindividual sio:SIO_000671 ?diseaseindividual_identifier .
+    ?diseaseindividual_identifier sio:SIO_000300 ?pid .
+
+
+# date of symptom onset is the value (output) of its own model, date of diagnosis is in the context of the diagnosis model
+        GRAPH ?onsetg {
+            ?onsetrole sio:SIO_000356 ?onsetprocess ; 
+                        a sio:SIO_000016 .
+            ?onsetprocess a sio:SIO_000006 , ?onsetprocess_type ; 
+                        sio:SIO_000229 ?onsetoutput .
+            ?onsetoutput a sio:SIO_000015, ?onsetoutput_type; 
+                        sio:SIO_000628 ?onsetattribute.
+            ?onsetattribute a  <http://purl.obolibrary.org/obo/NCIT_C124353>.
+        	
+            ?onsetoutput sio:SIO_000300 ?onsetvalue .
+        }
+        ?onsetg a obo:NCIT_C62143 ; # encounter
+	            sio:SIO_000068 ?onsettimeline, ?onsetevent . # is part of
+
+        ?onsettimeline a obo:NCIT_C54576, sio:SIO_000417; 
+    	                sio:SIO_000332 ?onsetindividual .
+        ?onsetindividual sio:SIO_000671 ?onsetindividual_identifier .
+        ?onsetindividual_identifier sio:SIO_000300 ?pid .  # close the join around PID
+    
+} group by ?ORDO ?yearOfDiagnosis order by ?yearOfDiagnosis ?ORDO 
