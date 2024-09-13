@@ -6,10 +6,10 @@
 #+ endpoint_in_url: False
 
 PREFIX sio: <http://semanticscience.org/resource/>
-select (count(?p) as ?count) where { 
-    ?p sio:SIO_000228 ?role .  # person has role role
-    ?role sio:SIO_000356 ?process . # is realized in process
-    ?process sio:SIO_000229 ?output . #has output output
-    ?output sio:SIO_000628 ?attribute . # output refers to attribute
-	?attribute a ?_type_iri .  # attribute is a orphacode
+select (COUNT(?disattribute) as ?count) where { 
+?disprocess a  <http://purl.obolibrary.org/obo/NCIT_C18020> ; # diagnostic process
+            sio:SIO_000229 ?disoutput .
+?disoutput a <http://purl.obolibrary.org/obo/NCIT_C154625>; # diagnosis code
+           sio:SIO_000628 ?disattribute.
+?disattribute a ?_type_iri .  # attribute is a orphacode
 }
